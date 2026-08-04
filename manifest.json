@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "巴哈動畫瘋 跳廣告 (Bahamut Ani Ad Skip)",
+  "version": "1.0.0",
+  "description": "Extension foundation for Ani-Gamer playback automation.",
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

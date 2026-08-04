@@ -1,0 +1,15 @@
+# Playwright MCP scratch output (screenshots / snapshots from testing)
+.playwright-mcp/
+
+# Chrome writes this when loading an unpacked extension
+_metadata/
+
+# Build output — load dist/ as the unpacked extension (npm run build)
+dist/
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+
+# Local agent skills
+.agents/skills/

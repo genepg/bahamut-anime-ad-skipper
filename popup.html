@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      width: 280px; margin: 0; padding: 16px;
+      font: 14px/1.5 -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+      background: #1f2230; color: #f3f4f6;
+    }
+    h1 { font-size: 15px; margin: 0 0 4px; display: flex; align-items: center; gap: 6px; }
+    .sub { font-size: 11px; color: #9aa0b4; margin: 0 0 14px; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; }
+    label { font-weight: 600; }
+    .switch { position: relative; width: 44px; height: 24px; flex: none; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; cursor: pointer; background: #4b5066; border-radius: 24px; transition: .2s; }
+    .slider::before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+    input:checked + .slider { background: #5b8cff; }
+    input:checked + .slider::before { transform: translateX(20px); }
+    .hint { font-size: 11px; color: #9aa0b4; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1>⏭ 動畫瘋 跳廣告</h1>
+  <p class="sub">ani.gamer.com.tw ad skipper</p>
+
+  <div class="row">
+    <label for="enabled">啟用 / Enabled</label>
+    <span class="switch"><input type="checkbox" id="enabled" /><span class="slider"></span></span>
+  </div>
+
+  <p class="hint">自動同意年齡確認、靜音廣告、隱形完成「獎勵式」彈出廣告、按下站方的跳過鈕、並關閉登入提示。<br><br>※ 無法加速廣告影片：本站會偵測播放速率竄改並封鎖（顯示「廣告播放錯誤」）。</p>
+
+  <script src="settings-storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
