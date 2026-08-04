@@ -4,6 +4,16 @@
   "version": "1.0.0",
   "description": "Extension foundation for Ani-Gamer playback automation.",
   "permissions": ["storage"],
+  "host_permissions": ["https://ani.gamer.com.tw/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://ani.gamer.com.tw/*"],
+      "js": ["dom-element.js", "settings-storage.js", "ad-skip-engine.js", "content.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": true
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
