@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "巴哈動畫瘋 跳廣告 (Bahamut Ani Ad Skip)",
   "version": "1.0.0",
-  "description": "Extension foundation for Ani-Gamer playback automation.",
+  "description": "Automates age-gate acceptance and available ad controls on ani.gamer.com.tw, while muting in-video ads and completing rewarded-ad countdowns.",
   "permissions": ["storage"],
   "host_permissions": [
     "https://ani.gamer.com.tw/*",
@@ -16,10 +16,22 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://ani.gamer.com.tw/*"],
+      "matches": [
+        "https://ani.gamer.com.tw/*",
+        "https://*.googlesyndication.com/*",
+        "https://*.doubleclick.net/*",
+        "https://*.g.doubleclick.net/*",
+        "https://imasdk.googleapis.com/*",
+        "https://*.googleadservices.com/*",
+        "https://*.adservice.google.com/*",
+        "https://*.adservice.google.com.tw/*"
+      ],
       "js": ["inject.js"],
       "run_at": "document_start",
-      "world": "MAIN"
+      "world": "MAIN",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     },
     {
       "matches": ["https://ani.gamer.com.tw/*"],
@@ -40,7 +52,9 @@
       ],
       "js": ["dom-element.js", "settings-storage.js", "adframe.js"],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     }
   ],
   "action": {

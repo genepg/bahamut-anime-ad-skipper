@@ -64,6 +64,15 @@
     try {
       diagnose();
 
+      document.querySelectorAll<HTMLMediaElement>("video").forEach((video) => {
+        try {
+          if (video.paused && !video.ended) {
+            const p = video.play();
+            if (p && typeof p.catch === "function") p.catch(() => { /* ignore */ });
+          }
+        } catch { /* ignore */ }
+      });
+
       // Skippable-ad controls are safe to click any time.
       const skip = document.querySelector<HTMLElement>(
         ".videoAdUiSkipButton, .vast-skip-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern"

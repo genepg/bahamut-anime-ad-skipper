@@ -42,6 +42,7 @@ namespace AniAdSkip {
         this.dismissLoginNag();
         if (this.isAdPlaying()) {
           this.setMuted(true);
+          this.ensureAdPlaying();
           this.clickSkip();
           this.adWasPlaying = true;
         } else if (this.adWasPlaying) {
@@ -49,6 +50,17 @@ namespace AniAdSkip {
           this.adWasPlaying = false;
         }
       } catch { /* a page change must not stop the engine */ }
+    }
+
+    private ensureAdPlaying(): void {
+      document.querySelectorAll<HTMLMediaElement>("video").forEach((video) => {
+        try {
+          if (video.paused && !video.ended) {
+            const p = video.play();
+            if (p && typeof p.catch === "function") p.catch(() => { /* ignore */ });
+          }
+        } catch { /* ignore */ }
+      });
     }
 
     private isAdPlaying(): boolean {
