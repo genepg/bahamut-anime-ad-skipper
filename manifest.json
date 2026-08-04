@@ -17,6 +17,12 @@
   "content_scripts": [
     {
       "matches": ["https://ani.gamer.com.tw/*"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://ani.gamer.com.tw/*"],
       "js": ["dom-element.js", "settings-storage.js", "ad-skip-engine.js", "content.js"],
       "run_at": "document_start",
       "world": "ISOLATED",
