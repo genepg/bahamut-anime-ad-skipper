@@ -4,7 +4,7 @@
 
   const settings = new AniAdSkip.SettingsStorage(true);
   const engine = new AniAdSkip.AdSkipEngine();
-  settings.onChange((enabled) => { if (enabled) engine.start(); else engine.stop(); });
+  settings.onChange(({ enabled }) => { if (enabled) engine.start(); else engine.stop(); });
   settings.load(() => undefined);
 
   let badge: HTMLDivElement | null = null;

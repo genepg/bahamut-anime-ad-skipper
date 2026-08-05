@@ -5,13 +5,34 @@
  * badge) so behaviour is visible without DevTools.
  *
  * Crash-safety: this runs in MANY ad frames, so it must stay cheap. It uses a
- * single bounded setInterval (NO MutationObserver — that can storm on busy ad
- * creatives), every call is wrapped so it can never throw, and the whole thing
- * stops after a hard cap so nothing runs forever in idle pixel frames.
+ * single inexpensive setInterval (NO MutationObserver — that can storm on busy
+ * ad creatives), and every call is wrapped so it can never throw. The interval
+ * stays alive because Google can reuse a frame for a rewarded ad much later.
  *
- * Safe rule: only click the POST-countdown close (#dismiss-button-element) and
- * its confirmation — never the early #dismiss-button (closing before the reward
- * is earned trips anti-adblock).
+ * The rewarded creative's real structure, captured live from
+ * <hash>.safeframe.googlesyndication.com:
+ *
+ *   <div id="dismiss-button" class="close-button-outer">      <- WRAPPER, not a button
+ *     <div id="count-down-container" class="close-button">
+ *       <div id="count-down-text">N 秒後即可獲得獎勵</div>
+ *       <div id="close-button" class="disabled">關閉</div>      <- early close (#close-button.disabled {display:none})
+ *     </div>
+ *     <div id="dismiss-button-element" class="close-button">關閉</div>  <- post-countdown close
+ *   </div>
+ *   <div id="dialog-wrapper">                                  <- opacity:0;pointer-events:none until .visible
+ *     <div id="confirmation-title">關閉廣告？</div>
+ *     <div id="confirmation-message">您將無法獲得獎勵</div>
+ *     <div id="close-ad-button" role="button">關閉</div>        <- forfeit the reward
+ *     <div id="resume-ad-button" role="button">繼續</div>       <- keep watching (never click)
+ *   </div>
+ *
+ * #dismiss-button must never be clicked: it is the always-visible container, so
+ * clicking it does nothing while making the click loop believe it succeeded —
+ * which is what kept the rewarded ad open until its countdown expired.
+ *
+ * By default, click #dismiss-button-element only after the countdown. When the
+ * user opts out of waiting, click #close-button as soon as Google enables it
+ * and confirm the forfeit with #close-ad-button.
  */
 (() => {
   "use strict";
@@ -22,8 +43,12 @@
   };
 
   let enabled = true;
+  let waitForRewardAd = true;
   const settings = new AniAdSkip.SettingsStorage();
-  settings.onChange((value) => { enabled = value; });
+  settings.onChange((value) => {
+    enabled = value.enabled;
+    waitForRewardAd = value.waitForRewardAd;
+  });
   settings.load(() => undefined);
 
   const report = (s: string): void => {
@@ -41,6 +66,13 @@
     } catch { return false; }
   };
 
+  const clickFirstVisible = (elements: readonly (Element | null)[], why: string): boolean => {
+    for (const element of elements) {
+      if (click(element, why)) return true;
+    }
+    return false;
+  };
+
   const dumped = new Set<string>();
   function diagnose(): void {
     try {
@@ -56,10 +88,8 @@
   }
 
   let ticks = 0;
-  let timer = 0;
   function tick(): void {
-    // hard cap so this never runs forever in a persistent/idle ad frame
-    if (++ticks > 900) { clearInterval(timer); return; } // ~7.5 min
+    ticks += 1;
     if (!enabled) return;
     try {
       diagnose();
@@ -78,7 +108,15 @@
         ".videoAdUiSkipButton, .vast-skip-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern"
       );
       if (skip && !skip.classList.contains("videoAdUiHidden") && click(skip, "skip")) return;
-      if (click(document.getElementById("resume_video_button") ?? document.querySelector(".rewardResumebutton"), "resume")) return;
+
+      // Resuming only serves the wait-for-reward flow: it keeps the ad running
+      // so the reward is earned. When the user opted out of the reward it is
+      // the opposite of what we want — the rewarded popup's "keep watching"
+      // control lives right next to the close confirmation, so clicking it here
+      // would undo the close we just performed, tick after tick, until the
+      // countdown ran out on its own.
+      if (waitForRewardAd &&
+        click(document.getElementById("resume_video_button") ?? document.querySelector(".rewardResumebutton"), "resume")) return;
 
       const ariaSkip = document.querySelector<HTMLElement>(
         '[aria-label*="Skip"], [aria-label*="跳過"], [aria-label*="略過"]'
@@ -100,27 +138,49 @@
       const visText = ((): string => {
         try { return document.body ? document.body.innerText || "" : ""; } catch { return ""; }
       })();
-      const rewardPending = (cdc !== null && AniAdSkip.DOMElement.isVisible(cdc)) || /\d+\s*秒後/.test(visText);
+      const rewardPending =
+        (cdc !== null && AniAdSkip.DOMElement.isVisible(cdc)) ||
+        /秒後即可獲得獎勵/.test(visText);
       if (DEBUG) {
         try { document.documentElement.setAttribute("data-aniadskip", ticks + "|" + (rewardPending ? "pending" : "ready")); } catch { /* ignore */ }
       }
+      if (click(document.getElementById("close-ad-button"), waitForRewardAd ? "confirm-dismiss" : "confirm-without-reward")) return;
+
+      if (!waitForRewardAd) {
+        // Forfeit-the-reward confirmations. KEEP_WATCHING must be excluded
+        // explicitly: the confirmation dialog puts "繼續觀看" / "Continue
+        // watching" beside the close button, and clicking it sends us straight
+        // back into the countdown.
+        const GIVE_UP_REGEX = /放棄獎勵|不取得獎勵|不要獎勵|仍要關閉|確認關閉|關閉廣告|give\s*up|close\s*(ad|anyway)/i;
+        const KEEP_WATCHING_REGEX = /繼續|再看|resume|keep\s*watching|continue/i;
+        for (const el of document.querySelectorAll<HTMLElement>("button, [role=button], input[type=button]")) {
+          const t = AniAdSkip.DOMElement.text(el);
+          if (!t || t.length > 30 || KEEP_WATCHING_REGEX.test(t)) continue;
+          if (GIVE_UP_REGEX.test(t) && click(el, "confirm-without-reward")) return;
+        }
+
+        if (clickFirstVisible([
+          document.getElementById("close-button"),
+          document.getElementById("dismiss-button-element"),
+          document.getElementById("close_button"),
+          document.getElementById("close_button_icon"),
+          document.querySelector(".rewarded-ad-close, .early-close-button"),
+          document.querySelector('[aria-label*="關閉"], [aria-label*="Close"], [aria-label*="dismiss"]')
+        ], "dismiss-without-reward")) return;
+      }
+
       if (!rewardPending) {
         const ariaClose = document.querySelector<HTMLElement>(
           '[aria-label*="關閉"], [aria-label*="Close"], [aria-label*="dismiss"]'
         );
         if (ariaClose && click(ariaClose, "aria-close")) return;
 
-        if (
-          click(
-            document.getElementById("dismiss-button-element") ??
-              document.getElementById("close_button") ??
-              document.getElementById("close-ad-button") ??
-              document.getElementById("close_button_icon") ??
-              document.querySelector(".close-button, .dismiss-button, .btn-close, .ad-close"),
-            "dismiss"
-          )
-        )
-          return;
+        if (clickFirstVisible([
+          document.getElementById("dismiss-button-element"),
+          document.getElementById("close_button"),
+          document.getElementById("close_button_icon"),
+          document.querySelector(".close-button, .dismiss-button, .btn-close, .ad-close")
+        ], "dismiss")) return;
 
         const CLOSE_REGEX = /關閉廣告|關閉|點此關閉|close\s*ad|close/i;
         for (const el of document.querySelectorAll<HTMLElement>("button, a, div, span, [role=button], input[type=button]")) {
@@ -134,5 +194,5 @@
     } catch { /* never throw out of the interval */ }
   }
 
-  try { timer = setInterval(tick, 500); } catch { /* ignore */ }
+  try { setInterval(tick, 500); } catch { /* ignore */ }
 })();

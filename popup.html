@@ -32,7 +32,12 @@
     <label class="switch" aria-label="啟用 / Enabled"><input type="checkbox" id="enabled" /><span class="slider"></span></label>
   </div>
 
-  <p class="hint">自動同意年齡確認、靜音廣告、隱形完成「獎勵式」彈出廣告、按下站方的跳過鈕、並關閉登入提示。<br><br>※ 無法加速廣告影片：本站會偵測播放速率竄改並封鎖（顯示「廣告播放錯誤」）。</p>
+  <div class="row">
+    <label for="waitForRewardAd">等待獎勵廣告 / Wait for reward</label>
+    <label class="switch" aria-label="等待獎勵廣告 / Wait for reward"><input type="checkbox" id="waitForRewardAd" /><span class="slider"></span></label>
+  </div>
+
+  <p class="hint">開啟「等待獎勵廣告」會等倒數完成、取得獎勵後關閉。關閉此選項時，擴充功能會在關閉鈕出現後立即按下，並確認放棄獎勵。<br><br>※ 無法加速廣告影片：本站會偵測播放速率竄改並封鎖（顯示「廣告播放錯誤」）。</p>
 
   <script src="settings-storage.js"></script>
   <script src="popup.js"></script>

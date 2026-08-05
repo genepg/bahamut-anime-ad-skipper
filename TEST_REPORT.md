@@ -17,12 +17,14 @@
    **goog_rewarded popup** it finds the close button **`#dismiss-button-element`**
    and clicks it once it appears (i.e. after the reward countdown), then confirms
    the "關閉廣告？" dialog (`#close-ad-button`). Gated so it only closes **after**
-   the countdown ("N 秒" gone) — closing early trips anti-adblock.
+   the countdown ("N 秒" gone) — closing early was flagged in this run.
 3. `inject.js` — suppresses the anti-adblock `alert()` and spoofs Page Visibility
    and focus events so ad playback can continue when the tab is not foregrounded.
 
-No network blocking, no `playbackRate` changes, and no early rewarded-ad close —
-each of those was tested and **trips the site's anti-adblock**.
+No network blocking and no `playbackRate` changes — both were tested and **trip
+the site's anti-adblock**. Early rewarded close is off by default for the same
+reason, but is now available behind the **Wait for reward** toggle (see the
+2026-08-05 section at the end).
 
 ## Results (worst-case logged-out env)
 
@@ -38,9 +40,11 @@ each of those was tested and **trips the site's anti-adblock**.
 
 ## Honest conclusion
 
-- The rewarded ad's **~30s reward countdown cannot be shortened** — every attempt
-  to speed/skip/early-close it gets caught. The extension makes it **muted and
-  hands-free**: it plays out, then the close button is clicked for you.
+- The rewarded ad's **~30s reward countdown cannot be shortened** while the
+  reward is being earned — every attempt to speed/skip it gets caught. In the
+  default mode the extension makes it **muted and hands-free**: it plays out,
+  then the close button is clicked for you. Forfeiting the reward outright is
+  the opt-in path added on 2026-08-05.
 - Reliability in this hostile test environment is variable (~2/3, occasional
   stuck/None). A **logged-in account on a normal residential IP** generally gets
   lighter, faster ads and should fare better — please test there.
@@ -89,3 +93,63 @@ verify the user-visible result after reloading the unpacked extension:
 2. Open a different browser tab for at least 10 seconds.
 3. Return and confirm the ad countdown/playback progressed rather than paused,
    then confirm it closes or skips normally.
+
+## 2026-08-05 — Rewarded-ad early close ("Wait for reward" off)
+
+### Symptom
+
+With **等待獎勵廣告 / Wait for reward** turned off, the rewarded ad still ran its
+full ~30s countdown before closing.
+
+### Root cause (captured live from the real creative)
+
+The rewarded creative served on `*.safeframe.googlesyndication.com` is:
+
+```html
+<div id="dismiss-button" class="close-button-outer">          <!-- WRAPPER, not a button -->
+  <div id="count-down-container" class="close-button">
+    <div id="count-down-text">N 秒後即可獲得獎勵</div>
+    <div id="close-button" class="disabled">關閉</div>          <!-- early close -->
+  </div>
+  <div id="dismiss-button-element" class="close-button">關閉</div>  <!-- post-countdown close -->
+</div>
+<div id="dialog-wrapper">                                      <!-- opacity:0 until .visible -->
+  <div id="close-ad-button" role="button">關閉</div>            <!-- forfeit the reward -->
+  <div id="resume-ad-button" role="button">繼續</div>           <!-- keep watching -->
+</div>
+```
+
+Three defects, all fixed:
+
+1. `#dismiss-button` was in the click list, but it is the always-visible
+   *container*. Clicking it does nothing while the click loop counts it as a
+   success and returns — so the real controls were never reached.
+2. The `resume` click ran on every tick regardless of mode, and the give-up text
+   matcher included `continue`; both press the confirmation dialog's
+   keep-watching control and send the ad back into its countdown.
+3. `DOMElement.isVisible` walked ancestors and rejected any element under a
+   `pointer-events: none` wrapper — including controls that re-enable pointer
+   events on themselves. Replaced with `Element.checkVisibility()`.
+
+### Verification
+
+- `npm test` — 13/13 pass, including regression tests built from the captured
+  markup ("the wrapper is not a close control", "must not press 繼續",
+  "clicks an early close nested in a pointer-events:none wrapper").
+- `npm run typecheck` — clean.
+- **Live, logged in, real Chrome** (`animeVideo.php?sn=50123`), extension's own
+  ad-frame reporting:
+
+  ```
+  1.3s found #close-button
+  1.3s clicked dismiss-without-reward     <- early close
+  1.8s clicked confirm-without-reward     <- 關閉廣告？您將無法獲得獎勵 confirmed
+  ```
+
+  Rewarded ad dismissed 1.8s after it opened instead of ~30s.
+
+### Not covered
+
+A single live rewarded ad was observed end-to-end in this mode. Long-run
+anti-adblock behaviour of forfeiting rewards repeatedly is unmeasured — the
+default remains **Wait for reward: on**.

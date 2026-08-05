@@ -33,14 +33,22 @@ userscript "Auto play ads on ani.gamer.com.tw".
   **mutes** the ad, auto-clicks the in-player skip button
   (`#adSkipButton` / `.nativeAD-skip-button`) **once it carries the `enable`
   class** (its real skippable state — never during the `廣告 N 秒` countdown or the
-  `如何消除廣告？` upsell), and **auto-dismisses the intermittent login popup**
-  (the `dialogify` modal).
+  `如何消除廣告？` upsell), and **auto-dismisses unsolicited login reminders**
+  while leaving the user-initiated Gamer login iframe open.
 - **`adframe.ts`** is injected *into* the Google ad iframes (cross-origin
   `safeframe.googlesyndication.com` / `imasdk.googleapis.com`). For the **rewarded
   popup** it clicks the skip / resume buttons, and — crucially — clicks
   `#dismiss-button-element`, the close that appears **after** the reward countdown
   finishes (reward earned → safe). The ad runs its ~30s countdown muted, then it's
   auto-closed for you. No manual clicking.
+
+  With **Wait for reward** switched off it takes the early close (`#close-button`)
+  as soon as Google enables it and answers the resulting
+  `關閉廣告？您將無法獲得獎勵` dialog with `#close-ad-button`, closing the ad in
+  about a second at the cost of the reward. The rewarded creative's exact control
+  layout is documented at the top of `src/adframe.ts` — worth reading before
+  touching those selectors, since the surrounding `#dismiss-button` element is a
+  container rather than a button.
 - **`inject.ts`** (page main world) suppresses the anti-adblock nag
   `alert("由於擋廣告插件會影響播放器運作…")` and **spoofs Page Visibility & focus events** (`document.hidden`, `visibilityState`, `visibilitychange`) scoped strictly to `ani.gamer.com.tw`, allowing ads to continue playing uninterrupted when switching tabs.
 
@@ -55,8 +63,10 @@ anti-adblock** — the site shows "廣告播放錯誤" and removes the player:
   speed-up option, and why the countdowns cannot be accelerated. (The rewarded
   countdown also runs in a separate-process cross-origin iframe whose clock the
   page can't reach anyway.)
-- **Clicking the rewarded close *early*** (`#dismiss-button` / `#close-ad-button`,
-  before the reward countdown) — "reward not earned" = flagged.
+- **Clicking the rewarded close *early*** — flagged during the original testing,
+  which is why waiting for the reward remains the default. It is available as the
+  opt-in **Wait for reward → off** toggle; treat it as the riskier mode and
+  switch back to waiting if the site starts complaining.
 - **Faking the rewarded completion events** (`rewardedSlotGranted/Closed`) — it
   desyncs against the still-running real ad and *increased* hard blocks in testing.
   Removed in favour of the let-it-run-then-dismiss approach above.
@@ -99,6 +109,9 @@ Other scripts: `npm run typecheck` (type-check only, no emit) and
 
 - **啟用 / Enabled** — master on/off (also the kill switch if the site ever
   misbehaves).
+- **等待獎勵廣告 / Wait for reward** — on by default. Turn it off to close a
+  rewarded ad as soon as its early close control appears and automatically
+  confirm that the reward should be forfeited.
 
 Stored in `chrome.storage.sync`; changes apply live to open tabs.
 

@@ -9,12 +9,25 @@ namespace AniAdSkip {
       return null;
     }
 
+    /* Google hides the rewarded-ad controls it does not want clicked yet with
+     * `display:none` on the control or `opacity:0` on an ancestor wrapper, so
+     * both have to be honoured. Ask the engine via checkVisibility() rather
+     * than walking ancestors by hand: a child may legitimately re-enable
+     * `visibility` (and `pointer-events`, which is not a visibility property at
+     * all) inside a disabled wrapper, and treating those wrappers as opaque is
+     * what made the early close button look unclickable. */
     static isVisible(element: Element | null): element is HTMLElement {
       if (!(element instanceof HTMLElement)) return false;
       const rect = element.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) return false;
+      const check = (element as HTMLElement & {
+        checkVisibility?: (options: { checkOpacity: boolean; checkVisibilityCSS: boolean }) => boolean;
+      }).checkVisibility;
+      if (typeof check === "function") {
+        return check.call(element, { checkOpacity: true, checkVisibilityCSS: true });
+      }
       const style = getComputedStyle(element);
-      return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+      return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity) !== 0;
     }
 
     static text(element: Element | null): string {
