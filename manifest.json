@@ -26,7 +26,7 @@
         "https://*.adservice.google.com/*",
         "https://*.adservice.google.com.tw/*"
       ],
-      "js": ["inject.js"],
+      "js": ["main-world-channel.main.js", "inject.js"],
       "run_at": "document_start",
       "world": "MAIN",
       "all_frames": true,
@@ -35,7 +35,7 @@
     },
     {
       "matches": ["https://ani.gamer.com.tw/*"],
-      "js": ["dom-element.js", "settings-storage.js", "ad-skip-engine.js", "content.js"],
+      "js": ["dom-element.js", "media-keepalive.js", "main-world-channel.js", "settings-storage.js", "ad-skip-engine.js", "content.js"],
       "run_at": "document_start",
       "world": "ISOLATED",
       "all_frames": true
@@ -50,7 +50,7 @@
         "https://*.adservice.google.com/*",
         "https://*.adservice.google.com.tw/*"
       ],
-      "js": ["dom-element.js", "settings-storage.js", "adframe.js"],
+      "js": ["dom-element.js", "media-keepalive.js", "main-world-channel.js", "settings-storage.js", "ad-frame-closer.js", "adframe.js"],
       "run_at": "document_start",
       "all_frames": true,
       "match_about_blank": true,

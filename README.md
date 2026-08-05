@@ -34,7 +34,7 @@ userscript "Auto play ads on ani.gamer.com.tw".
   `.nativeAD-skip-button`) **once it carries the `enable` class** (its real skippable state — never during the `廣告 N 秒` countdown or the
   `如何消除廣告？` upsell), and **auto-dismisses unsolicited login reminders**
   while leaving the user-initiated Gamer login iframe open.
-- **`adframe.ts`** is injected *into* the Google ad iframes (cross-origin
+- **`ad-frame-closer.ts`** is injected *into* the Google ad iframes (cross-origin
   `safeframe.googlesyndication.com` / `imasdk.googleapis.com`). For the **rewarded
   popup** it clicks the skip / resume buttons, and — crucially — clicks
   `#dismiss-button-element`, the close that appears **after** the reward countdown
@@ -45,9 +45,10 @@ userscript "Auto play ads on ani.gamer.com.tw".
   as soon as Google enables it and answers the resulting
   `關閉廣告？您將無法獲得獎勵` dialog with `#close-ad-button`, closing the ad in
   about a second at the cost of the reward. The rewarded creative's exact control
-  layout is documented at the top of `src/adframe.ts` — worth reading before
+  layout is documented at the top of `src/ad-frame-closer.ts`, above the ordered
+  `CLOSE_STRATEGIES` table that encodes the whole policy — worth reading before
   touching those selectors, since the surrounding `#dismiss-button` element is a
-  container rather than a button.
+  container rather than a button (see `WRAPPER_IDS`).
 - **`inject.ts`** (page main world) suppresses the anti-adblock nag
   `alert("由於擋廣告插件會影響播放器運作…")` and **spoofs Page Visibility & focus events** (`document.hidden`, `visibilityState`, `visibilitychange`) scoped strictly to `ani.gamer.com.tw`, allowing ads to continue playing uninterrupted when switching tabs.
 
@@ -120,11 +121,14 @@ Stored in `chrome.storage.sync`; changes apply live to open tabs.
 |------|---------|
 | `manifest.json` | MV3 manifest that loads shared classic-script modules before each content-script coordinator |
 | `src/ad-skip-engine.ts` | page automation module: age gate, in-video ad handling, skip controls, and login-nag dismissal |
-| `src/settings-storage.ts` | shared `chrome.storage.sync` settings module; mirrors the enabled flag to `localStorage` for the main world |
-| `src/dom-element.ts` | shared visibility, text-matching, and safe-click module |
-| `src/inject.ts` | main-world `PageInvisibilitySpoofer`: suppresses the anti-adblock alert and spoofs visibility/focus events |
+| `src/settings-storage.ts` | shared `chrome.storage.sync` settings module; republishes changes over the `MainWorldChannel` when given one |
+| `src/main-world-channel.ts` | the isolated ↔ main world seam: localStorage snapshot for `document_start`, `CustomEvent` for live changes. Built twice — Chrome injects a file into a frame only once even across worlds, so the MAIN world loads the `.main.js` copy |
+| `src/dom-element.ts` | shared visibility, text-matching, and safe-click module; reports *why* a click was refused |
+| `src/media-keepalive.ts` | shared nudge for paused ad videos, used by the page engine and every ad frame |
+| `src/inject.ts` | main-world `PageInvisibilitySpoofer`: suppresses the anti-adblock alert and spoofs visibility/focus events; every patch is reversible, so the toggle applies without a reload |
 | `src/content.ts` | isolated-world coordinator plus diagnostic badge |
-| `src/adframe.ts` | Google ad-frame coordinator: skip / resume / post-countdown rewarded-ad dismissal |
+| `src/ad-frame-closer.ts` | the rewarded-ad closing policy: an ordered strategy table behind `tick(settings)` |
+| `src/adframe.ts` | production adapter for the closer — timer, settings, status badge |
 | `popup.html` / `src/popup.ts` | toolbar on/off toggle |
 | `tsconfig.json` | strict TypeScript config (`strict`, `noUncheckedIndexedAccess`, …) |
 | `dist/` | build output — the loadable extension (gitignored) |
@@ -133,7 +137,8 @@ Stored in `chrome.storage.sync`; changes apply live to open tabs.
 
 ## Maintenance
 
-Selectors live in `src/ad-skip-engine.ts` and `src/adframe.ts`. If the site
+Selectors live in `src/ad-skip-engine.ts` and in the `CLOSE_STRATEGIES` table in
+`src/ad-frame-closer.ts` — add a strategy as a row rather than a branch. If the site
 reworks its ads, re-inspect the player in DevTools (the ad-playing classes are
 `vjs-anigamer-ad-playing` / `vjs-anigamer-m3u8-ad-playing` on `#ani_video`).
 

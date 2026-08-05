@@ -38,21 +38,10 @@ namespace AniAdSkip {
         DOMElement.clickFirst(SELECTORS.agree);
         this.dismissLoginNag();
         if (this.isAdPlaying()) {
-          this.ensureAdPlaying();
+          MediaKeepalive.resumeAll();
           this.clickSkip();
         }
       } catch { /* a page change must not stop the engine */ }
-    }
-
-    private ensureAdPlaying(): void {
-      document.querySelectorAll<HTMLMediaElement>("video").forEach((video) => {
-        try {
-          if (video.paused && !video.ended) {
-            const p = video.play();
-            if (p && typeof p.catch === "function") p.catch(() => { /* ignore */ });
-          }
-        } catch { /* ignore */ }
-      });
     }
 
     private isAdPlaying(): boolean {
@@ -66,12 +55,12 @@ namespace AniAdSkip {
 
     private clickSkip(): void {
       const enabled = document.querySelector<HTMLElement>("#adSkipButton.enable, .nativeAD-skip-button.enable, .vast-skip-button.enable");
-      if (enabled && !enabled.classList.contains("vjs-hidden") && DOMElement.click(enabled)) return;
+      if (enabled && !enabled.classList.contains("vjs-hidden") && DOMElement.click(enabled) === "clicked") return;
       for (const selector of SELECTORS.skip) {
         const element = document.querySelector<HTMLElement>(selector);
         if (element?.classList.contains("vjs-hidden")) continue;
         if (/廣告\s*\d+\s*秒/.test(DOMElement.text(element)) && !element?.classList.contains("enable")) continue;
-        if (DOMElement.click(element)) return;
+        if (DOMElement.click(element) === "clicked") return;
       }
       const byText = DOMElement.findByText("button, a, div, span, [role=button]", SKIP_TEXT, 15);
       if (byText && !/廣告\s*\d+\s*秒/.test(DOMElement.text(byText))) DOMElement.click(byText);
@@ -84,7 +73,7 @@ namespace AniAdSkip {
         ) !== null;
         if (isInteractiveLogin) continue;
         if (DOMElement.isVisible(dialog) && LOGIN_DIALOG_TEXT.test(dialog.textContent ?? "")) {
-          if (DOMElement.click(dialog.querySelector(".dialogify__close"))) return;
+          if (DOMElement.click(dialog.querySelector(".dialogify__close")) === "clicked") return;
         }
       }
     }

@@ -1,4 +1,5 @@
-/* Shared settings module. Its interface hides Chrome storage and optional main-world mirroring. */
+/* Shared settings module. Its interface hides Chrome storage and, when a
+ * MainWorldChannel is supplied, republishing across the main-world seam. */
 namespace AniAdSkip {
   export interface Settings {
     enabled: boolean;
@@ -9,7 +10,10 @@ namespace AniAdSkip {
     private value: Settings = { enabled: true, waitForRewardAd: true };
     private readonly listeners = new Set<(settings: Readonly<Settings>) => void>();
 
-    constructor(private readonly mirrorToLocalStorage = false) {}
+    /* Pass a channel from any context that shares its document with a
+     * main-world script. The popup has no main world to feed, so it passes
+     * nothing. */
+    constructor(private readonly channel?: MainWorldChannel) {}
 
     load(ready: (settings: Readonly<Settings>) => void): void {
       try {
@@ -46,9 +50,7 @@ namespace AniAdSkip {
 
     private update(settings: Settings): void {
       this.value = settings;
-      if (this.mirrorToLocalStorage) {
-        try { localStorage.setItem("__aniAdSkip_enabled", settings.enabled ? "true" : "false"); } catch { /* unavailable */ }
-      }
+      this.channel?.publish(settings);
       for (const listener of this.listeners) listener(settings);
     }
   }

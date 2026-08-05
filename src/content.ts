@@ -2,7 +2,7 @@
 (() => {
   "use strict";
 
-  const settings = new AniAdSkip.SettingsStorage(true);
+  const settings = new AniAdSkip.SettingsStorage(new AniAdSkip.MainWorldChannel());
   const engine = new AniAdSkip.AdSkipEngine();
   settings.onChange(({ enabled }) => { if (enabled) engine.start(); else engine.stop(); });
   settings.load(() => undefined);
