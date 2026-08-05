@@ -91,6 +91,10 @@ namespace AniAdSkip {
 
     private dismissLoginNag(): void {
       for (const dialog of document.querySelectorAll<HTMLElement>(".dialogify")) {
+        const isInteractiveLogin = dialog.querySelector(
+          "iframe[src*='user.gamer.com.tw/login'], iframe[src*='/login.php'], form[action*='/login.php']"
+        ) !== null;
+        if (isInteractiveLogin) continue;
         if (DOMElement.isVisible(dialog) && LOGIN_DIALOG_TEXT.test(dialog.textContent ?? "")) {
           if (DOMElement.click(dialog.querySelector(".dialogify__close"))) return;
         }
