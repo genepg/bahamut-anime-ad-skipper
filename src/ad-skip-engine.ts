@@ -12,7 +12,6 @@ namespace AniAdSkip {
 
   export class AdSkipEngine {
     private intervalId: number | null = null;
-    private adWasPlaying = false;
 
     start(): void {
       if (this.intervalId !== null) return;
@@ -23,8 +22,6 @@ namespace AniAdSkip {
     stop(): void {
       if (this.intervalId !== null) clearInterval(this.intervalId);
       this.intervalId = null;
-      this.setMuted(false);
-      this.adWasPlaying = false;
     }
 
     private isSupportedPage(): boolean {
@@ -41,13 +38,8 @@ namespace AniAdSkip {
         DOMElement.clickFirst(SELECTORS.agree);
         this.dismissLoginNag();
         if (this.isAdPlaying()) {
-          this.setMuted(true);
           this.ensureAdPlaying();
           this.clickSkip();
-          this.adWasPlaying = true;
-        } else if (this.adWasPlaying) {
-          this.setMuted(false);
-          this.adWasPlaying = false;
         }
       } catch { /* a page change must not stop the engine */ }
     }
@@ -70,10 +62,6 @@ namespace AniAdSkip {
       if (SELECTORS.skip.some((selector) => DOMElement.isVisible(document.querySelector(selector)))) return true;
       if (DOMElement.isVisible(document.querySelector('iframe[src*="doubleclick"], iframe[src*="googlesyndication"], iframe[src*="imasdk"]'))) return true;
       return DOMElement.findByText("button, a, div, span, [role=button]", SKIP_TEXT, 15) !== null;
-    }
-
-    private setMuted(muted: boolean): void {
-      document.querySelectorAll("video").forEach((video) => { try { video.muted = muted; } catch { /* ignore */ } });
     }
 
     private clickSkip(): void {

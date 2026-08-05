@@ -24,22 +24,21 @@ There are **two different ads**, confirmed live:
 
 ## How it handles ads
 
-Instead of blocking or tampering, it lets each ad run (muted) and **clicks the
+Instead of blocking or tampering, it lets each ad run and **clicks the
 exact buttons a real viewer would**, the moment they're available — so the player
 always sees a legitimately-completed ad. This mirrors the current (2025) working
 userscript "Auto play ads on ani.gamer.com.tw".
 
 - **`content.ts`** (main page) auto-accepts the 18+ prompt (`.choose-btn-agree`),
-  **mutes** the ad, auto-clicks the in-player skip button
-  (`#adSkipButton` / `.nativeAD-skip-button`) **once it carries the `enable`
-  class** (its real skippable state — never during the `廣告 N 秒` countdown or the
+  auto-clicks the in-player skip button (`#adSkipButton` /
+  `.nativeAD-skip-button`) **once it carries the `enable` class** (its real skippable state — never during the `廣告 N 秒` countdown or the
   `如何消除廣告？` upsell), and **auto-dismisses unsolicited login reminders**
   while leaving the user-initiated Gamer login iframe open.
 - **`adframe.ts`** is injected *into* the Google ad iframes (cross-origin
   `safeframe.googlesyndication.com` / `imasdk.googleapis.com`). For the **rewarded
   popup** it clicks the skip / resume buttons, and — crucially — clicks
   `#dismiss-button-element`, the close that appears **after** the reward countdown
-  finishes (reward earned → safe). The ad runs its ~30s countdown muted, then it's
+  finishes (reward earned → safe). The ad runs its ~30s countdown, then it's
   auto-closed for you. No manual clicking.
 
   With **Wait for reward** switched off it takes the early close (`#close-button`)
@@ -76,9 +75,9 @@ anti-adblock** — the site shows "廣告播放錯誤" and removes the player:
 Tested in a **fresh, logged-out profile on a datacenter IP** (the most aggressive
 ad treatment the site serves): **4/4 loads reached the anime, 0 blocks**, each
 after the rewarded ad's ~30s reward countdown (which is then auto-dismissed). The
-ad **cannot be made shorter** (any speed/skip tampering gets caught), but it plays
-muted and is closed for you automatically. A logged-in account on a normal IP
-generally sees lighter/faster ads.
+ad **cannot be made shorter** (any speed/skip tampering gets caught), but it is
+closed for you automatically. A logged-in account on a normal IP generally sees
+lighter/faster ads.
 
 If it ever misbehaves, the **Enabled** toggle is a kill switch. The extension's
 diagnostic badge reports activity from ad frames on the top-level page.
@@ -120,7 +119,7 @@ Stored in `chrome.storage.sync`; changes apply live to open tabs.
 | File | Purpose |
 |------|---------|
 | `manifest.json` | MV3 manifest that loads shared classic-script modules before each content-script coordinator |
-| `src/ad-skip-engine.ts` | page automation module: age gate, muted in-video ad handling, skip controls, and login-nag dismissal |
+| `src/ad-skip-engine.ts` | page automation module: age gate, in-video ad handling, skip controls, and login-nag dismissal |
 | `src/settings-storage.ts` | shared `chrome.storage.sync` settings module; mirrors the enabled flag to `localStorage` for the main world |
 | `src/dom-element.ts` | shared visibility, text-matching, and safe-click module |
 | `src/inject.ts` | main-world `PageInvisibilitySpoofer`: suppresses the anti-adblock alert and spoofs visibility/focus events |

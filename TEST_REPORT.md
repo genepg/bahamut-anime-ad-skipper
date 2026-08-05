@@ -10,9 +10,9 @@
 
 ## Final design (what the extension does)
 
-1. `content.js` — auto-accepts the 18+ prompt, **mutes** the ad, auto-clicks the
-   in-player skip button (`#adSkipButton`/`.nativeAD-skip-button`) once it has the
-   `enable` class, and auto-dismisses the login popup.
+1. `content.js` — auto-accepts the 18+ prompt, auto-clicks the in-player skip
+   button (`#adSkipButton`/`.nativeAD-skip-button`) once it has the `enable`
+   class, and auto-dismisses the login popup.
 2. `adframe.js` (injected into the cross-origin Google ad iframes) — for the
    **goog_rewarded popup** it finds the close button **`#dismiss-button-element`**
    and clicks it once it appears (i.e. after the reward countdown), then confirms
@@ -42,8 +42,8 @@ reason, but is now available behind the **Wait for reward** toggle (see the
 
 - The rewarded ad's **~30s reward countdown cannot be shortened** while the
   reward is being earned — every attempt to speed/skip it gets caught. In the
-  default mode the extension makes it **muted and hands-free**: it plays out,
-  then the close button is clicked for you. Forfeiting the reward outright is
+  default mode the extension makes it **hands-free**: it plays out, then the
+  close button is clicked for you. Forfeiting the reward outright is
   the opt-in path added on 2026-08-05.
 - Reliability in this hostile test environment is variable (~2/3, occasional
   stuck/None). A **logged-in account on a normal residential IP** generally gets
