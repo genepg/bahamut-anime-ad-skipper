@@ -142,9 +142,13 @@ Three defects, all fixed:
 
   ```
   1.3s found #close-button
-  1.3s clicked dismiss-without-reward     <- early close
-  1.8s clicked confirm-without-reward     <- 關閉廣告？您將無法獲得獎勵 confirmed
+  1.3s clicked early-close                <- early close
+  1.8s clicked confirm-dismiss            <- 關閉廣告？您將無法獲得獎勵 confirmed
   ```
+
+  (Strategy names updated 2026-08-09 to match the `CLOSE_STRATEGIES` table in
+  `src/ad-frame-closer.ts` — the transcript itself is unchanged, only the
+  reported names were renamed in a later refactor.)
 
   Rewarded ad dismissed 1.8s after it opened instead of ~30s.
 
