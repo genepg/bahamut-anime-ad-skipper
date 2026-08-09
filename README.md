@@ -97,6 +97,59 @@ Other scripts: `npm run typecheck` (type-check only, no emit) and
 `npm run watch` (recompile on save; re-run `npm run build` if you change
 `manifest.json` / `popup.html` / icons).
 
+## Release (automated)
+
+Two GitHub Actions workflows live in `.github/workflows/`:
+
+- **CI** (`ci.yml`) — type-checks and runs the browser suite on every push to
+  `main` and every pull request. The extension tests must run headed
+  (Chromium refuses `--load-extension` otherwise), so the run is wrapped in
+  `xvfb-run`.
+- **Publish** (`publish.yml`) — builds `dist/`, packs it, and ships it to the
+  Chrome Web Store. It reruns CI first and refuses to publish if that fails.
+
+To cut a release, bump the version in **both** `manifest.json` and
+`package.json`, commit, then tag:
+
+```bash
+git tag v1.0.1 && git push origin main --tags
+```
+
+The tag is only the release record — the store publishes the version inside the
+manifest, so the job fails fast if the two disagree. Running **Publish** by hand
+from the Actions tab lets you pick `trustedTesters` instead of `default`; a tag
+push always goes to everyone. Either way Google queues the item for review
+(`ITEM_PENDING_REVIEW` in the log is success, not failure), which can take days.
+
+### One-time store credentials
+
+Create these four repository secrets (Settings → Secrets and variables →
+Actions). The workflow also expects an environment named `chrome-web-store`,
+which is where you can add a required reviewer before anything ships.
+
+| Secret | Where it comes from |
+|--------|---------------------|
+| `CWS_EXTENSION_ID` | the item id in your store dashboard URL |
+| `CWS_CLIENT_ID` | OAuth client (type **Desktop app**) in a Google Cloud project with the **Chrome Web Store API** enabled |
+| `CWS_CLIENT_SECRET` | same OAuth client |
+| `CWS_REFRESH_TOKEN` | minted once against that client (below) |
+
+To mint the refresh token, visit the consent URL below in a browser signed in as
+the store account, approve, and exchange the `code` it returns:
+
+```bash
+# 1. open this, approve, copy the code from the page
+echo "https://accounts.google.com/o/oauth2/auth?response_type=code&scope=https://www.googleapis.com/auth/chromewebstore&access_type=offline&prompt=consent&redirect_uri=urn:ietf:wg:oauth:2.0:oob&client_id=YOUR_CLIENT_ID"
+# 2. exchange it — the refresh_token in the response is the secret
+curl -s -X POST https://oauth2.googleapis.com/token \
+  -d client_id=YOUR_CLIENT_ID -d client_secret=YOUR_CLIENT_SECRET \
+  -d code=THE_CODE -d grant_type=authorization_code \
+  -d redirect_uri=urn:ietf:wg:oauth:2.0:oob
+```
+
+Keep the refresh token out of the repo: it can publish to every existing user of
+the extension. Revoke it in the Google account's security settings if it leaks.
+
 ## Install (load unpacked)
 
 1. Run `npm run build` (see above).

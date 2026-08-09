@@ -7,7 +7,7 @@
     "build": "npm run clean && tsc -p tsconfig.json && npm run copy-static",
     "clean": "rm -rf dist",
     "copy-static": "mkdir -p dist && cp manifest.json popup.html dist/ && cp -R icons dist/icons && cp dist/main-world-channel.js dist/main-world-channel.main.js",
-    "test": "npm run build && node --test tests/**/*.test.mjs",
+    "test": "npm run build && node --test \"tests/**/*.test.mjs\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "watch": "tsc -p tsconfig.json --watch"
   },

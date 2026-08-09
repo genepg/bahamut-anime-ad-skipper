@@ -1,0 +1,143 @@
+# Build, pack, and publish dist/ to the Chrome Web Store.
+#
+# Triggered by pushing a version tag (v1.0.1), or by hand from the Actions tab
+# when you want to ship to trusted testers first. The tag is the release
+# record; the job refuses to run if it disagrees with the version in the
+# manifest, because that version — not the tag — is what the store publishes.
+#
+# Talks to the Web Store API with plain curl rather than a third-party action:
+# this job holds credentials that can publish to every user of the extension,
+# so what it runs should be readable in full, here.
+#
+# Required secrets (Settings → Secrets and variables → Actions), all from a
+# Google Cloud project with the Chrome Web Store API enabled:
+#   CWS_EXTENSION_ID    the item id from the store dashboard URL
+#   CWS_CLIENT_ID       OAuth client id (type: Desktop app)
+#   CWS_CLIENT_SECRET   OAuth client secret
+#   CWS_REFRESH_TOKEN   refresh token minted once for that client, with scope
+#                       https://www.googleapis.com/auth/chromewebstore
+# See the Release section of README.md for how to mint the refresh token.
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Who this version goes live for
+        type: choice
+        options: [default, trustedTesters]
+        default: default
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chrome-web-store
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    # Scopes the store credentials to one environment, so you can require a
+    # reviewer before anything ships. Create it under Settings → Environments.
+    environment: chrome-web-store
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Check the tag against the manifest
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          manifest=$(node -p "require('./dist/manifest.json').version")
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$manifest" != "$tag" ]; then
+            echo "::error::tag $GITHUB_REF_NAME says $tag but the manifest says $manifest"
+            exit 1
+          fi
+          echo "publishing version $manifest"
+
+      - name: Pack dist/
+        run: |
+          set -euo pipefail
+          # Zip the CONTENTS of dist/ — the store rejects a nested folder.
+          (cd dist && zip -qr ../extension.zip .)
+          unzip -l extension.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-zip
+          path: extension.zip
+
+      - name: Upload and publish
+        env:
+          ITEM_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          # A tag push always ships to everyone; the manual run may choose.
+          TARGET: ${{ inputs.target || 'default' }}
+        run: |
+          # No set -x anywhere below: the token must not reach the log.
+          set -euo pipefail
+
+          require() {
+            if [ -z "$2" ]; then
+              echo "::error::secret $1 is not set — see the header of this workflow"
+              exit 1
+            fi
+          }
+          require CWS_EXTENSION_ID "$ITEM_ID"
+          require CWS_CLIENT_ID "$CLIENT_ID"
+          require CWS_CLIENT_SECRET "$CLIENT_SECRET"
+          require CWS_REFRESH_TOKEN "$REFRESH_TOKEN"
+
+          token=$(curl -sS --fail-with-body -X POST https://oauth2.googleapis.com/token \
+            -d client_id="$CLIENT_ID" \
+            -d client_secret="$CLIENT_SECRET" \
+            -d refresh_token="$REFRESH_TOKEN" \
+            -d grant_type=refresh_token | jq -r '.access_token // empty')
+          if [ -z "$token" ]; then
+            echo "::error::could not mint an access token — the refresh token may be revoked or expired"
+            exit 1
+          fi
+          echo "::add-mask::$token"
+
+          echo "--- uploading a new draft to item $ITEM_ID"
+          upload=$(curl -sS --fail-with-body -X PUT -T extension.zip \
+            -H "Authorization: Bearer $token" \
+            -H "x-goog-api-version: 2" \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$ITEM_ID")
+          echo "$upload" | jq .
+          if [ "$(echo "$upload" | jq -r '.uploadState // "unknown"')" != "SUCCESS" ]; then
+            echo "::error::the store rejected the package"
+            exit 1
+          fi
+
+          echo "--- publishing to $TARGET"
+          published=$(curl -sS --fail-with-body -X POST \
+            -H "Authorization: Bearer $token" \
+            -H "x-goog-api-version: 2" \
+            -H "Content-Length: 0" \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/$ITEM_ID/publish?publishTarget=$TARGET")
+          echo "$published" | jq .
+          # ITEM_PENDING_REVIEW is the normal answer: the draft is accepted and
+          # queued for Google's review, which can take days. It is not a failure.
+          if ! echo "$published" | jq -e '[.status[]] | any(. == "OK" or . == "ITEM_PENDING_REVIEW")' >/dev/null; then
+            echo "::error::the store refused to publish the uploaded draft"
+            exit 1
+          fi

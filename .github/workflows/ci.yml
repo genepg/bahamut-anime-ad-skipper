@@ -1,0 +1,39 @@
+# Type-check and run the browser suite.
+#
+# The suite drives real Chromium, and the tests that load the unpacked
+# extension must run headed — Chromium refuses --load-extension otherwise — so
+# the whole run goes through xvfb rather than relying on headless mode.
+#
+# Also callable from publish.yml, so nothing reaches the Web Store without
+# having passed exactly this.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # --with-deps pulls the system libraries headed Chromium needs.
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run typecheck
+
+      - name: Test
+        run: xvfb-run --auto-servernum npm test
