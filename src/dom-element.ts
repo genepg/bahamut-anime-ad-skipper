@@ -31,7 +31,10 @@ namespace AniAdSkip {
     static isVisible(element: Element | null): element is HTMLElement {
       if (!(element instanceof HTMLElement)) return false;
       const rect = element.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) return false;
+      /* Either dimension at zero means nothing is rendered and nothing can be
+       * clicked. Both had to be zero here once, which let a full-width but
+       * collapsed ad container read as an ad that was on screen. */
+      if (rect.width === 0 || rect.height === 0) return false;
       const check = (element as HTMLElement & {
         checkVisibility?: (options: { checkOpacity: boolean; checkVisibilityCSS: boolean }) => boolean;
       }).checkVisibility;
@@ -72,8 +75,8 @@ namespace AniAdSkip {
       return this.click(element) === "clicked" ? element : null;
     }
 
-    static findByText(selector: string, pattern: RegExp, maxTextLength: number): HTMLElement | null {
-      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+    static findByText(selector: string, pattern: RegExp, maxTextLength: number, root: ParentNode = document): HTMLElement | null {
+      for (const element of root.querySelectorAll<HTMLElement>(selector)) {
         if (element.children.length > 3) continue;
         const text = this.text(element);
         if (text && text.length <= maxTextLength && pattern.test(text) && this.isVisible(element)) return element;

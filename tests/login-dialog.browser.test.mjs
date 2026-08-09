@@ -30,10 +30,12 @@ test("unsolicited login reminder is still dismissed", async () => {
 async function openEngineFixture() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  const [domElementScript, engineScript] = await Promise.all([
-    readFile(new URL("../dist/dom-element.js", import.meta.url), "utf8"),
-    readFile(new URL("../dist/ad-skip-engine.js", import.meta.url), "utf8"),
-  ]);
+  // The same modules the manifest gives the engine, in the same order.
+  const scripts = await Promise.all(
+    ["dom-element.js", "media-keepalive.js", "ad-skip-engine.js"].map((name) =>
+      readFile(new URL(`../dist/${name}`, import.meta.url), "utf8"),
+    ),
+  );
 
   await page.setContent(`
     <div id="ani_video" style="width:640px;height:360px"></div>
@@ -61,6 +63,6 @@ async function openEngineFixture() {
       }
     </script>
   `);
-  await page.evaluate(`${domElementScript}\n${engineScript}\nnew AniAdSkip.AdSkipEngine().start();`);
+  await page.evaluate(`${scripts.join("\n")}\nnew AniAdSkip.AdSkipEngine().start();`);
   return { browser, page };
 }
