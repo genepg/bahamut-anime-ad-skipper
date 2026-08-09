@@ -1,6 +1,6 @@
 {
   "name": "bahamut-anime-ad-skipper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Chrome MV3 extension that skips ads on ani.gamer.com.tw without tripping its anti-adblock.",
   "scripts": {

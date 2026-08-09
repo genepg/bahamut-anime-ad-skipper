@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "巴哈動畫瘋 跳廣告 (Bahamut Ani Ad Skip)",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Accepts age gates and handles available ad controls and rewarded-ad countdowns on ani.gamer.com.tw.",
   "permissions": ["storage"],
   "host_permissions": [
