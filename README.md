@@ -134,21 +134,36 @@ which is where you can add a required reviewer before anything ships.
 | `CWS_CLIENT_SECRET` | same OAuth client |
 | `CWS_REFRESH_TOKEN` | minted once against that client (below) |
 
-To mint the refresh token, visit the consent URL below in a browser signed in as
-the store account, approve, and exchange the `code` it returns:
+Two settings on that Cloud project decide whether the token keeps working:
+
+- Set the OAuth consent screen's **publishing status to "In production"**. While
+  it is in *Testing*, Google expires every refresh token after **7 days**, which
+  breaks the pipeline a week after you set it up.
+- The Google account you approve with must have publish rights on the item.
+
+To mint the refresh token, sign into a browser as that account and run the
+loopback flow below. (Google blocked the older `oob` copy-the-code redirect in
+October 2022; a **Desktop app** client accepts `http://localhost` on any port
+without registering it.)
 
 ```bash
-# 1. open this, approve, copy the code from the page
-echo "https://accounts.google.com/o/oauth2/auth?response_type=code&scope=https://www.googleapis.com/auth/chromewebstore&access_type=offline&prompt=consent&redirect_uri=urn:ietf:wg:oauth:2.0:oob&client_id=YOUR_CLIENT_ID"
-# 2. exchange it — the refresh_token in the response is the secret
+# 1. open this and approve — the browser then fails to load localhost, which is
+#    fine: the code is in the address bar as ?code=...&scope=...
+echo "https://accounts.google.com/o/oauth2/auth?response_type=code&access_type=offline&prompt=consent&redirect_uri=http://localhost:8080&scope=https://www.googleapis.com/auth/chromewebstore&client_id=YOUR_CLIENT_ID"
+
+# 2. exchange it — --data-urlencode matters, the code contains / and %
 curl -s -X POST https://oauth2.googleapis.com/token \
-  -d client_id=YOUR_CLIENT_ID -d client_secret=YOUR_CLIENT_SECRET \
-  -d code=THE_CODE -d grant_type=authorization_code \
-  -d redirect_uri=urn:ietf:wg:oauth:2.0:oob
+  --data-urlencode client_id=YOUR_CLIENT_ID \
+  --data-urlencode client_secret=YOUR_CLIENT_SECRET \
+  --data-urlencode code=THE_CODE_FROM_THE_ADDRESS_BAR \
+  --data-urlencode grant_type=authorization_code \
+  --data-urlencode redirect_uri=http://localhost:8080
 ```
 
-Keep the refresh token out of the repo: it can publish to every existing user of
-the extension. Revoke it in the Google account's security settings if it leaks.
+The `refresh_token` in the response is the secret. It is single-use in the sense
+that the code is: if you need to mint it again, redo both steps. Keep it out of
+the repo — it can publish to every existing user of the extension — and revoke it
+under the Google account's **Security → Third-party access** if it leaks.
 
 ## Install (load unpacked)
 
