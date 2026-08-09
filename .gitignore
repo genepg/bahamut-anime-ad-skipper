@@ -8,6 +8,13 @@ _metadata/
 dist/
 node_modules/
 
+# Chrome Web Store publishing credentials. The OAuth client secret and the
+# refresh token minted from it can publish to every existing user of this
+# extension — they belong in GitHub Actions secrets, never in the repo.
+client_secret*.json
+.env
+.env.*
+
 # OS / editor cruft
 .DS_Store
 
