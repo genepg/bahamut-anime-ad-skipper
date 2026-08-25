@@ -238,7 +238,10 @@ are `vjs-anigamer-ad-playing` / `vjs-anigamer-m3u8-ad-playing` on `#ani_video`.
 ## Release (automated)
 
 The published item is [巴哈動畫瘋 跳廣告 (Bahamut Ani Ad Skip)][store], item id
-`ceklkhdkhjbbcickkpmmglpegfcigcnc` — the `CWS_EXTENSION_ID` secret below.
+`ceklkhdkhjbbcickkpmmglpegfcigcnc` — the `CWS_EXTENSION_ID` secret below. Store
+listing, screenshots, and review status are managed in the
+[Chrome Web Store Developer Dashboard][devconsole]; publishing itself goes
+through the workflow rather than that dashboard.
 
 Two GitHub Actions workflows live in `.github/workflows/`:
 
@@ -269,7 +272,7 @@ which is where you can add a required reviewer before anything ships.
 
 | Secret | Where it comes from |
 |--------|---------------------|
-| `CWS_EXTENSION_ID` | the item id in your store dashboard URL |
+| `CWS_EXTENSION_ID` | the item id in the [dashboard][devconsole] URL for the item |
 | `CWS_CLIENT_ID` | OAuth client (type **Desktop app**) in a Google Cloud project with the **Chrome Web Store API** enabled |
 | `CWS_CLIENT_SECRET` | same OAuth client |
 | `CWS_REFRESH_TOKEN` | minted once against that client (below) |
@@ -306,3 +309,4 @@ again.
 
 [store]: https://chromewebstore.google.com/detail/%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B-%E8%B7%B3%E5%BB%A3%E5%91%8A-bahamut-ani-ad/ceklkhdkhjbbcickkpmmglpegfcigcnc
 [issues]: https://github.com/genepg/bahamut-anime-ad-skipper/issues
+[devconsole]: https://chrome.google.com/webstore/devconsole/
