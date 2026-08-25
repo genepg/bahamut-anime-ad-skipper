@@ -1,6 +1,6 @@
 # Privacy Policy / 隱私權政策
 
-Effective date / 生效日期: August 5, 2026
+Effective date / 生效日期: August 25, 2026
 
 ## English
 
@@ -12,17 +12,19 @@ Bahamut Ani Ad Skip (the "Extension") respects your privacy. This policy explain
 
 The Extension does not collect, transmit, sell, or share personal information, browsing history, viewing history, account information, payment information, or other user content.
 
-The Extension uses Chrome's `storage` capability only to save your enabled/disabled preference. This preference is synchronized through `chrome.storage.sync` between Chrome browsers where you are signed in, solely to remember whether the Extension should be enabled.
+The Extension uses Chrome's `storage` capability only to save your two on/off preferences ("Enabled" and "Wait for reward"). They are synchronized through `chrome.storage.sync` between Chrome browsers where you are signed in, solely to remember how you want the Extension to behave.
+
+The same two preferences are also mirrored into a single `localStorage` key (`__aniAdSkip_settings`) on the pages the Extension runs on. This is an internal mechanism that lets the Extension know your settings before the page starts running; it contains nothing but those two on/off values, and it is never read by or sent to anyone else.
 
 ### Website Access Permissions
 
-The Extension requires access to `ani.gamer.com.tw` and the necessary Google advertising iframe domains loaded in Ani-Gamer's playback flow. These permissions are used only to run the Extension's page automation features, including handling age confirmations, login prompts, ad muting, and visible, available skip, resume, or close controls.
+The Extension requires access to `ani.gamer.com.tw` and the necessary Google advertising iframe domains loaded in Ani-Gamer's playback flow. These permissions are used only to run the Extension's page automation features, including handling age confirmations, login prompts, resuming a paused ad video, and visible, available skip, resume, or close controls.
 
 The Extension does not make its own network requests and does not send any data to the developer or third-party servers.
 
 ### Data Retention and Deletion
 
-The enabled/disabled preference is the only data stored by the Extension. You may change it at any time from the Extension's toolbar popup. Uninstalling the Extension removes its locally stored extension data from Chrome.
+The two on/off preferences described above are the only data stored by the Extension. You may change them at any time from the Extension's toolbar popup. Uninstalling the Extension removes its locally stored extension data from Chrome; the `__aniAdSkip_settings` mirror is removed by clearing the site's data for `ani.gamer.com.tw` in Chrome's settings.
 
 ### Third-Party Services
 
@@ -49,17 +51,19 @@ For questions about this policy, please contact the developer through this proje
 
 本擴充功能不會收集、傳送、出售或分享你的個人資料、瀏覽紀錄、觀看紀錄、帳號資料、付款資料或其他使用者內容。
 
-本擴充功能只會使用 Chrome 的 `storage` 功能儲存「啟用／停用」偏好設定。此設定透過 `chrome.storage.sync` 與你已登入的 Chrome 瀏覽器同步，僅用於記住你是否要啟用本擴充功能。
+本擴充功能只會使用 Chrome 的 `storage` 功能儲存兩項開關偏好設定（「啟用」與「等待獎勵廣告」）。這些設定透過 `chrome.storage.sync` 與你已登入的 Chrome 瀏覽器同步，僅用於記住你希望本擴充功能如何運作。
+
+相同的兩項設定也會寫入所執行頁面的單一 `localStorage` 鍵值（`__aniAdSkip_settings`）。這只是內部機制，讓擴充功能在頁面開始執行前就能得知你的設定；其中只有那兩個開關值，不會被他人讀取或傳送給任何人。
 
 ### 網站存取權限
 
-本擴充功能需要存取 `ani.gamer.com.tw`，以及動畫瘋播放流程中載入的必要 Google 廣告 iframe 網域。這些權限僅用於在播放頁面執行自動化功能，包括處理年齡確認、登入提示、廣告靜音，以及已顯示且可用的跳過、繼續或關閉控制項。
+本擴充功能需要存取 `ani.gamer.com.tw`，以及動畫瘋播放流程中載入的必要 Google 廣告 iframe 網域。這些權限僅用於在播放頁面執行自動化功能，包括處理年齡確認、登入提示、恢復被暫停的廣告影片，以及已顯示且可用的跳過、繼續或關閉控制項。
 
 本擴充功能不會自行發出網路請求，也不會將任何資料傳送到開發者或第三方伺服器。
 
 ### 資料保留與刪除
 
-唯一儲存的資料是啟用／停用偏好設定。你可以隨時在擴充功能工具列彈窗中變更此設定；解除安裝本擴充功能後，Chrome 會移除其儲存的本機擴充功能資料。
+唯一儲存的資料就是上述兩項開關偏好設定。你可以隨時在擴充功能工具列彈窗中變更；解除安裝本擴充功能後，Chrome 會移除其儲存的本機擴充功能資料，而 `__aniAdSkip_settings` 鍵值可透過在 Chrome 設定中清除 `ani.gamer.com.tw` 的網站資料來移除。
 
 ### 第三方服務
 

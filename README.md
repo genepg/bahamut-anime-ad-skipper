@@ -1,7 +1,37 @@
 # 巴哈動畫瘋 跳廣告 — Bahamut Ani Ad Skip
 
+[![Install from the Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-%E5%AE%89%E8%A3%9D%20%2F%20Install-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B-%E8%B7%B3%E5%BB%A3%E5%91%8A-bahamut-ani-ad/ceklkhdkhjbbcickkpmmglpegfcigcnc)
+[![Privacy policy](https://img.shields.io/badge/Privacy-%E9%9A%B1%E7%A7%81%E6%AC%8A%E6%94%BF%E7%AD%96-6b7280)](PRIVACY.md)
+
 A Chrome (Manifest V3) extension that automates available ad controls on
 **巴哈姆特動畫瘋** (`ani.gamer.com.tw`).
+
+> **一般使用者請直接從商店安裝，不需要下載原始碼：**
+> **[Chrome 線上應用程式商店 — 巴哈動畫瘋 跳廣告](https://chromewebstore.google.com/detail/%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B-%E8%B7%B3%E5%BB%A3%E5%91%8A-bahamut-ani-ad/ceklkhdkhjbbcickkpmmglpegfcigcnc)**
+>
+> **Just want to use it?** Install it from the
+> **[Chrome Web Store](https://chromewebstore.google.com/detail/%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B-%E8%B7%B3%E5%BB%A3%E5%91%8A-bahamut-ani-ad/ceklkhdkhjbbcickkpmmglpegfcigcnc)** — no build step, and it auto-updates.
+
+## 安裝 / Install (Chrome Web Store)
+
+1. Open the listing: <https://chromewebstore.google.com/detail/%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B-%E8%B7%B3%E5%BB%A3%E5%91%8A-bahamut-ani-ad/ceklkhdkhjbbcickkpmmglpegfcigcnc>
+2. Click **加到 Chrome / Add to Chrome**, then confirm with **新增擴充功能 /
+   Add extension**.
+3. Open any episode, e.g. `https://ani.gamer.com.tw/animeVideo.php?sn=49359`.
+
+That is the whole setup — there is nothing to configure. The extension accepts
+the 18+ prompt, presses the player's skip control the moment the player enables
+it, and closes the rewarded ad once its countdown has finished. See
+[Settings](#settings-toolbar-popup) for the two toggles in the toolbar popup, and
+[Privacy and security](#privacy-and-security) for what it does (and does not) do
+with your data — the full policy is in [PRIVACY.md](PRIVACY.md).
+
+Works in Chrome and in Chromium browsers that install from the Chrome Web Store
+(Edge, Brave, Vivaldi, Opera). Firefox and Safari are not supported. Problems or
+ideas go in [GitHub Issues](https://github.com/genepg/bahamut-anime-ad-skipper/issues).
+
+Developers who want to run it from source: see
+[Install from source](#install-from-source-load-unpacked).
 
 ## Why this is hard (and why normal ad blockers fail)
 
@@ -99,6 +129,10 @@ Other scripts: `npm run typecheck` (type-check only, no emit) and
 
 ## Release (automated)
 
+The published item is
+[巴哈動畫瘋 跳廣告 (Bahamut Ani Ad Skip)](https://chromewebstore.google.com/detail/%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B-%E8%B7%B3%E5%BB%A3%E5%91%8A-bahamut-ani-ad/ceklkhdkhjbbcickkpmmglpegfcigcnc) — item id
+`ceklkhdkhjbbcickkpmmglpegfcigcnc`, which is the `CWS_EXTENSION_ID` secret below.
+
 Two GitHub Actions workflows live in `.github/workflows/`:
 
 - **CI** (`ci.yml`) — type-checks and runs the browser suite on every push to
@@ -165,7 +199,11 @@ secrets are in GitHub.
 If Google returns no `refresh_token`, the account already has a live grant for
 that client — revoke it at the link above and run the script again.
 
-## Install (load unpacked)
+## Install from source (load unpacked)
+
+Only needed for development — everyday users should install the published build
+from the [Chrome Web Store](https://chromewebstore.google.com/detail/%E5%B7%B4%E5%93%88%E5%8B%95%E7%95%AB%E7%98%8B-%E8%B7%B3%E5%BB%A3%E5%91%8A-bahamut-ani-ad/ceklkhdkhjbbcickkpmmglpegfcigcnc). A source install does not auto-update,
+and Chrome will nag about developer-mode extensions on every launch.
 
 1. Run `npm run build` (see above).
 2. Open `chrome://extensions`.
@@ -173,15 +211,34 @@ that client — revoke it at the link above and run the script again.
 4. Click **Load unpacked** and select the **`dist/`** folder.
 5. Open an episode, e.g. `https://ani.gamer.com.tw/animeVideo.php?sn=49359`.
 
+Load it from `dist/` while the store build is also installed and both will run on
+the page; disable one of them.
+
 ## Settings (toolbar popup)
+
+Click the extension's icon in the Chrome toolbar — if you don't see it, open the
+puzzle-piece menu and pin **巴哈動畫瘋 跳廣告**.
 
 - **啟用 / Enabled** — master on/off (also the kill switch if the site ever
   misbehaves).
 - **等待獎勵廣告 / Wait for reward** — on by default. Turn it off to close a
   rewarded ad as soon as its early close control appears and automatically
-  confirm that the reward should be forfeited.
+  confirm that the reward should be forfeited. Faster, but you lose the reward,
+  and it is the mode the site is more likely to object to — switch back to
+  waiting if the player starts showing 廣告播放錯誤.
 
-Stored in `chrome.storage.sync`; changes apply live to open tabs.
+Stored in `chrome.storage.sync`; changes apply live to open tabs, so you don't
+need to reload the episode after flipping a toggle.
+
+### If something looks wrong
+
+- The player shows **廣告播放錯誤** — turn **等待獎勵廣告 / Wait for reward**
+  back on, then reload the episode.
+- Ads are not being skipped at all — check that **啟用 / Enabled** is on, reload
+  the page, and confirm the extension is enabled at `chrome://extensions`.
+- Still broken? The site's ad markup may have changed: please
+  [open an issue](https://github.com/genepg/bahamut-anime-ad-skipper/issues) with
+  the episode URL and what you saw.
 
 ## Files
 
@@ -215,9 +272,13 @@ Please consider 動畫瘋's 訂閱 (subscription) to support the creators.
 
 ## Privacy and security
 
-The extension does not collect, transmit, or sell browsing data. Its only stored
-setting is the Enabled toggle, held in `chrome.storage.sync`. It needs access to
+The extension does not collect, transmit, or sell browsing data. The only data it
+stores is the two toggles in the popup, held in `chrome.storage.sync` and
+mirrored into one `localStorage` key (`__aniAdSkip_settings`) so the main world
+can read them at `document_start`. It needs access to
 Ani-Gamer and the listed Google ad-frame hosts solely to run its content scripts;
-it makes no network requests of its own. Please review the source and permissions
-before installing an unpacked extension, and report security concerns privately to
-the repository owner rather than publishing exploit details in an issue.
+it makes no network requests of its own. The full policy, in English and 繁體中文,
+is in [PRIVACY.md](PRIVACY.md), which is also the privacy policy linked from the
+store listing. Please review the source and permissions before installing an
+unpacked extension, and report security concerns privately to the repository
+owner rather than publishing exploit details in an issue.
