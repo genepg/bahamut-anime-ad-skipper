@@ -10,12 +10,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { chromium } from "playwright";
+import type { BrowserContext } from "playwright";
 
 const extensionPath = new URL("../dist/", import.meta.url).pathname;
 
 test("the shipped ad-frame scripts close a rewarded ad end to end", async () => {
   const profilePath = await mkdtemp(join(tmpdir(), "ani-ad-skip-frame-"));
-  let context;
+  let context: BrowserContext | undefined;
 
   try {
     context = await chromium.launchPersistentContext(profilePath, {
@@ -42,7 +43,7 @@ test("the shipped ad-frame scripts close a rewarded ad end to end", async () => 
     );
 
     const page = await context.newPage();
-    const failures = [];
+    const failures: string[] = [];
     page.on("pageerror", (error) => failures.push(String(error)));
     page.on("console", (message) => {
       if (message.type() === "error") failures.push(message.text());
@@ -53,7 +54,7 @@ test("the shipped ad-frame scripts close a rewarded ad end to end", async () => 
     // No countdown is present, so the reward is already earned and the shipped
     // default (wait for reward) is free to take the post-countdown close.
     await page.waitForFunction(
-      () => document.querySelector("#dismiss-button-element").dataset.clicked === "yes",
+      () => document.querySelector<HTMLElement>("#dismiss-button-element")!.dataset["clicked"] === "yes",
       null,
       { timeout: 10_000 },
     );
@@ -71,7 +72,7 @@ test("the shipped ad-frame scripts close a rewarded ad end to end", async () => 
 
 test("the shipped page scripts accept the age gate end to end", async () => {
   const profilePath = await mkdtemp(join(tmpdir(), "ani-ad-skip-page-"));
-  let context;
+  let context: BrowserContext | undefined;
 
   try {
     context = await chromium.launchPersistentContext(profilePath, {
@@ -93,12 +94,12 @@ test("the shipped page scripts accept the age gate end to end", async () => {
     );
 
     const page = await context.newPage();
-    const failures = [];
+    const failures: string[] = [];
     page.on("pageerror", (error) => failures.push(String(error)));
 
     await page.goto("https://ani.gamer.com.tw/animeVideo.php?sn=test");
     await page.waitForFunction(
-      () => document.querySelector(".choose-btn-agree").dataset.clicked === "yes",
+      () => document.querySelector<HTMLElement>(".choose-btn-agree")!.dataset["clicked"] === "yes",
       null,
       { timeout: 10_000 },
     );

@@ -72,12 +72,12 @@ npm run typecheck
 
 Result: **PASS** (2026-08-05).
 
-- `tests/manifest-background-frame.test.mjs` confirms the main-world
+- `tests/manifest-background-frame.test.mts` confirms the main-world
   visibility guard (`inject.js`) uses `all_frames`, `match_about_blank`, and
   `match_origin_as_fallback`.
 - The same test confirms the rewarded-ad runner (`adframe.js`) uses those
   options too.
-- `tests/background-frame-injection.browser.test.mjs` starts headed Chromium
+- `tests/background-frame-injection.browser.test.mts` starts headed Chromium
   with the built unpacked extension, loads a mocked Ani-Gamer page containing
   an `about:blank` creative frame, and confirms that frame receives
   `document.hidden === false` and `document.visibilityState === "visible"`.

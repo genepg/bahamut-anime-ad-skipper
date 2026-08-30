@@ -5,13 +5,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { chromium } from "playwright";
+import type { Browser, Page } from "playwright";
 
 test("a subscriber hears the snapshot immediately, then every published change", async () => {
   const { browser, page } = await openHost(["main-world-channel.js"]);
   try {
     const heard = await page.evaluate(() => {
       const channel = new AniAdSkip.MainWorldChannel();
-      const seen = [];
+      const seen: Array<Readonly<AniAdSkip.Settings>> = [];
       channel.subscribe((settings) => seen.push(settings));
       channel.publish({ enabled: false, waitForRewardAd: true });
       channel.publish({ enabled: true, waitForRewardAd: false });
@@ -36,7 +37,7 @@ test("the snapshot survives a reload, so document_start knows the last value", a
     await loadScripts(page, ["main-world-channel.js"]);
 
     const snapshot = await page.evaluate(() => {
-      let seen = null;
+      let seen: Readonly<AniAdSkip.Settings> | null = null;
       new AniAdSkip.MainWorldChannel().subscribe((settings) => { seen = settings; });
       return seen;
     });
@@ -80,12 +81,12 @@ test("a page whose last known setting was off is never spoofed at all", async ()
   }
 });
 
-const spoofed = (page) => page.evaluate(() => Object.hasOwn(document, "hidden"));
+const spoofed = (page: Page): Promise<boolean> => page.evaluate(() => Object.hasOwn(document, "hidden"));
 
-const publish = (page, settings) =>
+const publish = (page: Page, settings: Readonly<AniAdSkip.Settings>): Promise<void> =>
   page.evaluate((value) => new AniAdSkip.MainWorldChannel().publish(value), settings);
 
-async function loadScripts(page, scriptNames) {
+async function loadScripts(page: Page, scriptNames: readonly string[]): Promise<void> {
   const scripts = await Promise.all(
     scriptNames.map((name) => readFile(new URL(`../dist/${name}`, import.meta.url), "utf8")),
   );
@@ -94,7 +95,7 @@ async function loadScripts(page, scriptNames) {
   await page.evaluate(`${scripts.join("\n")}\nglobalThis.AniAdSkip = AniAdSkip; undefined;`);
 }
 
-async function openHost(scriptNames) {
+async function openHost(scriptNames: readonly string[]): Promise<{ browser: Browser; page: Page }> {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   // A real origin: localStorage is unavailable on an opaque one, and inject.js

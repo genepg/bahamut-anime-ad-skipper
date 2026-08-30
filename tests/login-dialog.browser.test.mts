@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { chromium } from "playwright";
+import type { Browser, Page } from "playwright";
 
 test("user-initiated Gamer login dialog remains open", async () => {
   const fixture = await openEngineFixture();
@@ -19,15 +20,15 @@ test("unsolicited login reminder is still dismissed", async () => {
   const fixture = await openEngineFixture();
   try {
     await fixture.page.evaluate(() => {
-      document.querySelector("#nag-dialog").style.display = "block";
+      document.querySelector<HTMLElement>("#nag-dialog")!.style.display = "block";
     });
-    await fixture.page.waitForFunction(() => document.querySelector("#nag-dialog").dataset.closed === "yes");
+    await fixture.page.waitForFunction(() => document.querySelector<HTMLElement>("#nag-dialog")!.dataset["closed"] === "yes");
   } finally {
     await fixture.browser.close();
   }
 });
 
-async function openEngineFixture() {
+async function openEngineFixture(): Promise<{ browser: Browser; page: Page }> {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   // The same modules the manifest gives the engine, in the same order.

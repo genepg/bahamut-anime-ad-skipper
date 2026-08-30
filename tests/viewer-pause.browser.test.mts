@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { chromium } from "playwright";
+import type { Browser, Page } from "playwright";
 
 test("a video the viewer paused during an ad stays paused", async () => {
   const fixture = await openEngineFixture({ adPlaying: true });
@@ -22,8 +23,8 @@ test("a video the viewer paused during an ad stays paused", async () => {
 test("a pause the viewer did not make is still nudged back to playing", async () => {
   const fixture = await openEngineFixture({ adPlaying: true });
   try {
-    await fixture.page.evaluate(() => document.querySelector("#player").pause());
-    await fixture.page.waitForFunction(() => !document.querySelector("#player").paused, null, { timeout: 5_000 });
+    await fixture.page.evaluate(() => document.querySelector<HTMLVideoElement>("#player")!.pause());
+    await fixture.page.waitForFunction(() => !document.querySelector<HTMLVideoElement>("#player")!.paused, null, { timeout: 5_000 });
   } finally {
     await fixture.browser.close();
   }
@@ -34,7 +35,7 @@ test("the viewer can pause again after resuming a paused ad themselves", async (
   try {
     await fixture.page.locator("#pause-button").click();
     await fixture.page.locator("#play-button").click();
-    await fixture.page.waitForFunction(() => !document.querySelector("#player").paused, null, { timeout: 5_000 });
+    await fixture.page.waitForFunction(() => !document.querySelector<HTMLVideoElement>("#player")!.paused, null, { timeout: 5_000 });
     await fixture.page.locator("#pause-button").click();
     await fixture.page.waitForTimeout(1200);
     assert.equal(await isPaused(fixture.page), true, "the second pause is the viewer's too");
@@ -48,7 +49,7 @@ test("ordinary page furniture is not mistaken for an ad", async () => {
   // container, which is what the page looks like between ads.
   const fixture = await openEngineFixture({ adPlaying: false });
   try {
-    await fixture.page.evaluate(() => document.querySelector("#player").pause());
+    await fixture.page.evaluate(() => document.querySelector<HTMLVideoElement>("#player")!.pause());
     await fixture.page.waitForTimeout(1200);
     assert.equal(await isPaused(fixture.page), true, "no ad is playing, so nothing should be nudged");
   } finally {
@@ -56,11 +57,11 @@ test("ordinary page furniture is not mistaken for an ad", async () => {
   }
 });
 
-function isPaused(page) {
-  return page.evaluate(() => document.querySelector("#player").paused);
+function isPaused(page: Page): Promise<boolean> {
+  return page.evaluate(() => document.querySelector<HTMLVideoElement>("#player")!.paused);
 }
 
-async function openEngineFixture({ adPlaying }) {
+async function openEngineFixture({ adPlaying }: { adPlaying: boolean }): Promise<{ browser: Browser; page: Page }> {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   const scripts = await Promise.all(
@@ -90,7 +91,7 @@ async function openEngineFixture({ adPlaying }) {
       document.querySelector("#play-button").addEventListener("click", () => player.play());
     </script>
   `);
-  await page.waitForFunction(() => !document.querySelector("#player").paused, null, { timeout: 5_000 });
+  await page.waitForFunction(() => !document.querySelector<HTMLVideoElement>("#player")!.paused, null, { timeout: 5_000 });
   await page.evaluate(`${scripts.join("\n")}\nnew AniAdSkip.AdSkipEngine().start();`);
   return { browser, page };
 }

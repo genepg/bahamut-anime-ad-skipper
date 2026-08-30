@@ -4,10 +4,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { chromium } from "playwright";
+import type { Page } from "playwright";
 
 const visible = "display:block;width:40px;height:20px";
-const WAIT = { enabled: true, waitForRewardAd: true };
-const NO_REWARD = { enabled: true, waitForRewardAd: false };
+const WAIT: AniAdSkip.AdFrameSettings = { enabled: true, waitForRewardAd: true };
+const NO_REWARD: AniAdSkip.AdFrameSettings = { enabled: true, waitForRewardAd: false };
 
 /* The exact structure Google serves on ani.gamer.com.tw, captured live.
  * #close-button starts disabled; Google enables it partway into the countdown,
@@ -151,8 +152,8 @@ test("a rewarded ad appearing after 900 ticks is still handled", async () => {
     }, NO_REWARD);
     await fixture.page.evaluate((style) => {
       document.body.insertAdjacentHTML("beforeend", `<button id="dismiss-button-element" style="${style}">關閉</button>`);
-      document.querySelector("#dismiss-button-element").addEventListener("click", (event) => {
-        event.currentTarget.dataset.clicked = "yes";
+      document.querySelector("#dismiss-button-element")!.addEventListener("click", (event) => {
+        (event.currentTarget as HTMLElement).dataset["clicked"] = "yes";
       });
     }, visible);
     assert.equal((await fixture.tick(NO_REWARD)).clicked, "early-close");
@@ -182,7 +183,20 @@ test("close-like controls are reported once, as diagnostics", async () => {
   }
 });
 
-async function openCloser(body) {
+/* What each test drives the closer through. openCloser owns the one instance
+ * the policy accumulates tick state on, so the fixture exposes verbs rather
+ * than the closer itself. */
+interface CloserFixture {
+  readonly page: Page;
+  close(): Promise<void>;
+  tick(settings: Readonly<AniAdSkip.AdFrameSettings>): Promise<AniAdSkip.TickOutcome>;
+  clicked(selector: string): Promise<string | null>;
+  countdownVisible(): Promise<boolean>;
+  enableEarlyClose(): Promise<void>;
+  endCountdown(): Promise<void>;
+}
+
+async function openCloser(body: string): Promise<CloserFixture> {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   const scripts = await Promise.all([
@@ -207,15 +221,17 @@ async function openCloser(body) {
     close: () => browser.close(),
     tick: (settings) => page.evaluate((value) => globalThis.__closer.tick(value), settings),
     clicked: (selector) => page.locator(selector).getAttribute("data-clicked"),
-    countdownVisible: () => page.evaluate(() => document.querySelector("#count-down-container").style.display !== "none"),
+    countdownVisible: () => page.evaluate(
+      () => document.querySelector<HTMLElement>("#count-down-container")!.style.display !== "none",
+    ),
     enableEarlyClose: () => page.evaluate(() => {
-      const close = document.querySelector("#close-button");
+      const close = document.querySelector<HTMLElement>("#close-button")!;
       close.classList.remove("disabled");
       close.style.display = "block";
     }),
     endCountdown: () => page.evaluate(() => {
-      document.querySelector("#count-down-container").style.display = "none";
-      document.querySelector("#dismiss-button-element").style.display = "block";
+      document.querySelector<HTMLElement>("#count-down-container")!.style.display = "none";
+      document.querySelector<HTMLElement>("#dismiss-button-element")!.style.display = "block";
     }),
   };
 }

@@ -4,12 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { chromium } from "playwright";
+import type { BrowserContext } from "playwright";
 
 const extensionPath = new URL("../dist/", import.meta.url).pathname;
 
 test("visibility guard is injected into an origin-inherited child frame", async () => {
   const profilePath = await mkdtemp(join(tmpdir(), "ani-ad-skip-test-"));
-  let context;
+  let context: BrowserContext | undefined;
 
   try {
     context = await chromium.launchPersistentContext(profilePath, {

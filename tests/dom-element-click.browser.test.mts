@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { chromium } from "playwright";
+import type { Browser, Page } from "playwright";
 
 const visible = "display:block;width:40px;height:20px";
 
@@ -15,7 +16,7 @@ test("a click attempt reports the reason it was refused", async () => {
     <a id="inert" href="#" style="${visible}">關閉</a>
   `, ["dom-element.js"]);
   try {
-    const outcome = (selector) => page.evaluate(
+    const outcome = (selector: string): Promise<AniAdSkip.ClickOutcome> => page.evaluate(
       (value) => AniAdSkip.DOMElement.click(document.querySelector(value)),
       selector,
     );
@@ -35,9 +36,9 @@ test("keep-playing nudges every paused video under the root it is given", async 
   const { browser, page } = await openPage("", ["media-keepalive.js"]);
   try {
     // A nudged video is no longer paused, so each case starts from fresh markup.
-    const resumed = (rootSelector) => page.evaluate((root) => {
+    const resumed = (rootSelector: string | null): Promise<number> => page.evaluate((root) => {
       document.body.innerHTML = '<video id="a"></video><div id="frame"><video id="b"></video></div>';
-      return AniAdSkip.MediaKeepalive.resumeAll(root === null ? undefined : document.querySelector(root));
+      return AniAdSkip.MediaKeepalive.resumeAll(root === null ? undefined : document.querySelector(root) ?? undefined);
     }, rootSelector);
 
     assert.equal(await resumed(null), 2, "the whole document by default");
@@ -48,7 +49,7 @@ test("keep-playing nudges every paused video under the root it is given", async 
   }
 });
 
-async function openPage(body, scriptNames) {
+async function openPage(body: string, scriptNames: readonly string[]): Promise<{ browser: Browser; page: Page }> {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   const scripts = await Promise.all(
