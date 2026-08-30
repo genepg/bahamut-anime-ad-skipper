@@ -9,6 +9,13 @@
 
     "rootDir": "src",
     "outDir": "dist",
+    // The Node-side suite type-checks its page.evaluate() callbacks against the
+    // real AniAdSkip types. It cannot include src directly — these are global
+    // scripts, and pulling them into a Node program collides @types/node with
+    // the DOM lib — so the types are handed over as declarations instead.
+    // Kept out of dist/ on purpose: publish.yml zips that whole directory.
+    "declaration": true,
+    "declarationDir": "types",
     "removeComments": false,
     "newLine": "lf",
 

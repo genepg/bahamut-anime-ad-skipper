@@ -6,6 +6,8 @@ _metadata/
 
 # Build output — load dist/ as the unpacked extension (npm run build)
 dist/
+# Declarations emitted from src for the Node-side suite to type-check against
+types/
 node_modules/
 
 # Chrome Web Store publishing credentials. The OAuth client secret and the

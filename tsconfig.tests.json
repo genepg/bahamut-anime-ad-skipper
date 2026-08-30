@@ -1,0 +1,38 @@
+{
+  // Type-checks the Node-side code: the browser suite and the release scripts.
+  //
+  // Nothing is emitted. Node 24 strips the types itself, so `node --test` runs
+  // the .mts sources directly and there is no build step to keep in sync.
+  //
+  // `types/` holds the declarations emitted from src (npm run types). They are
+  // what lets a page.evaluate() callback be checked against the real Settings,
+  // ClickOutcome and TickOutcome types instead of `any`. Declarations rather
+  // than the sources themselves: src is a set of global browser scripts, and
+  // including those here would collide @types/node with the DOM lib.
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "ES2023",
+    // DOM for the page.evaluate() callbacks, node for the test runner itself.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "chrome"],
+
+    "noEmit": true,
+    // Node erases types without consulting the type checker, so an elided
+    // import would become a missing runtime import. This makes tsc reject any
+    // import that is not explicitly `import type`.
+    "verbatimModuleSyntax": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["types", "tests", "scripts"]
+}
