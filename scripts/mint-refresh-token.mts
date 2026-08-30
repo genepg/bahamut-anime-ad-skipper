@@ -2,7 +2,7 @@
 /*
  * Mints the CWS_REFRESH_TOKEN that .github/workflows/publish.yml needs.
  *
- *   node scripts/mint-refresh-token.mjs [path/to/client_secret_*.json]
+ *   node scripts/mint-refresh-token.mts [path/to/client_secret_*.json]
  *
  * Google blocked the old copy-the-code redirect in 2022, so this runs the
  * loopback flow it replaced with: a throwaway server on 127.0.0.1 catches the
@@ -18,6 +18,26 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { readdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
+
+/* The two shapes Google's OAuth client JSON comes in, and the slice of the
+ * token response this script acts on. */
+interface OAuthClient {
+  readonly client_id: string;
+  readonly client_secret: string;
+}
+
+interface ClientFile {
+  readonly installed?: OAuthClient;
+  readonly web?: OAuthClient;
+  readonly client_id?: string;
+  readonly client_secret?: string;
+}
+
+interface TokenResponse {
+  readonly refresh_token?: string;
+  readonly error?: string;
+  readonly error_description?: string;
+}
 
 const PORT = 8080;
 const REDIRECT_URI = `http://localhost:${PORT}`;
@@ -63,7 +83,7 @@ console.log(`  CWS_CLIENT_ID      ${clientId}`);
 console.log("  CWS_CLIENT_SECRET  (the client_secret field in that JSON)");
 console.log("  CWS_EXTENSION_ID   the 32-character id from your store dashboard URL\n");
 
-async function findClientFile() {
+async function findClientFile(): Promise<string> {
   const match = (await readdir(process.cwd())).find(
     (name) => name.startsWith("client_secret") && name.endsWith(".json"),
   );
@@ -74,12 +94,12 @@ async function findClientFile() {
   return match;
 }
 
-async function readClient(path) {
-  let parsed;
+async function readClient(path: string): Promise<OAuthClient> {
+  let parsed: ClientFile;
   try {
-    parsed = JSON.parse(await readFile(path, "utf8"));
+    parsed = JSON.parse(await readFile(path, "utf8")) as ClientFile;
   } catch (error) {
-    console.error(`Could not read ${path}: ${error.message}`);
+    console.error(`Could not read ${path}: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
   // Desktop clients nest under "installed"; web clients under "web".
@@ -88,13 +108,13 @@ async function readClient(path) {
     console.error(`${path} has no client_id/client_secret — is it the OAuth client JSON?`);
     process.exit(1);
   }
-  return client;
+  return { client_id: client.client_id, client_secret: client.client_secret };
 }
 
-function waitForCode() {
-  return new Promise((resolve, reject) => {
+function waitForCode(): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
     const server = createServer((request, response) => {
-      const url = new URL(request.url, REDIRECT_URI);
+      const url = new URL(request.url ?? "/", REDIRECT_URI);
       const code = url.searchParams.get("code");
       const error = url.searchParams.get("error");
       response.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
@@ -103,7 +123,7 @@ function waitForCode() {
       if (code) resolve(code);
       else reject(new Error(error ?? "no code in the redirect"));
     });
-    server.on("error", (error) => {
+    server.on("error", (error: NodeJS.ErrnoException) => {
       if (error.code === "EADDRINUSE") {
         console.error(`Port ${PORT} is busy — free it and run this again.`);
         process.exit(1);
@@ -114,7 +134,7 @@ function waitForCode() {
   });
 }
 
-async function exchange(code) {
+async function exchange(code: string): Promise<TokenResponse> {
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -126,7 +146,7 @@ async function exchange(code) {
       grant_type: "authorization_code",
     }),
   });
-  const body = await response.json();
+  const body = await response.json() as TokenResponse;
   if (!response.ok) {
     console.error(`\nToken exchange failed (${response.status}): ${body.error} — ${body.error_description ?? ""}`);
     process.exit(1);
@@ -134,7 +154,7 @@ async function exchange(code) {
   return body;
 }
 
-function open(url) {
+function open(url: string): void {
   const command = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
   try {
     const child = spawn(command, [url], { stdio: "ignore", detached: true, shell: process.platform === "win32" });

@@ -291,7 +291,7 @@ the helper script — it runs the loopback flow locally and prints the result.
 registering it.)
 
 ```bash
-node scripts/mint-refresh-token.mjs
+node scripts/mint-refresh-token.mts
 ```
 
 It finds `client_secret*.json` in the current directory (or takes a path as an
